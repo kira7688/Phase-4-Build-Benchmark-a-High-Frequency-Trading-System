@@ -22,22 +22,25 @@ using TradeLoggerType = TradeLogger<double, int>;
 void analyzeLatencies(const std::vector<long long>& latencies) {
     if (latencies.empty()) return;
 
-    auto min = *std::min_element(latencies.begin(), latencies.end());
-    auto max = *std::max_element(latencies.begin(), latencies.end());
-    double mean = std::accumulate(latencies.begin(), latencies.end(), 0.0) / latencies.size();
+    auto latencies_copy = latencies;
+    std::sort(latencies_copy.begin(), latencies_copy.end());
+
+    auto min = latencies_copy.front();
+    auto max = latencies_copy.back();
+    double mean = std::accumulate(latencies_copy.begin(), latencies_copy.end(), 0.0) / latencies_copy.size();
     double variance = 0.0;
-    for (auto l : latencies) variance += (l - mean) * (l - mean);
-    double stddev = std::sqrt(variance / latencies.size());
-    long long p99 = latencies[static_cast<int>(latencies.size() * 0.99)];
+    for (auto l : latencies_copy) variance += (l - mean) * (l - mean);
+    double stddev = std::sqrt(variance / latencies_copy.size());
+    long long p99 = latencies_copy[static_cast<int>(latencies_copy.size() * 0.99)];
 
     std::cout << "Tick-to-Trade Latency (nanoseconds):\n";
     std::cout << "Min: " << min << "\nMax: " << max << "\nMean: " << mean
               << "\nStdDev: " << stddev << "\nP99: " << p99 << "\n";
 }
 
-int main() {
+void runLoadScalingExperiment(int num_ticks) {
+    std::cout << "\n--- Running Load Scaling Experiment: " << num_ticks << " ticks ---\n";
     std::vector<long long> latencies;
-    const int num_ticks = 10000;
     latencies.reserve(num_ticks);
 
     OrderBookType order_book;
@@ -77,6 +80,16 @@ int main() {
     // Analyze latency
     analyzeLatencies(latencies);
     logger.printStats();
+}
+
+int main() {
+    std::cout << "Starting HFT System Benchmarks...\n";
+    
+    // Load scaling experiment
+    std::vector<int> tick_loads = {1000, 10000, 100000};
+    for (int ticks : tick_loads) {
+        runLoadScalingExperiment(ticks);
+    }
 
     return 0;
 }
